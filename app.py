@@ -972,11 +972,11 @@ if page == pages[7]:
     For other data science/web development projects that I've cooked up, 
     head over to my portfolio at http://nancychelaru.rbind.io/portfolio/ .
     
-    
-    
     ''')
 
     st.title("Where to go from here?")
+
+    st.balloons()
 
     st.markdown('''
     Congratulations on making your way through this microlearning series! Now you have a starter-kit of key concepts and tools for 
@@ -990,8 +990,10 @@ if page == pages[7]:
     [factor analysis of mixed data](https://rpubs.com/nchelaru/famd) methods, to see how those findings agree and differ from 
     those shown here.
     
-    Hope you have enjoyed your stay!
+    Hope you have enjoyed your stay! :)
     ''')
+
+
 
 
 
