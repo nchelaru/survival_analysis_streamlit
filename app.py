@@ -237,9 +237,13 @@ if page == pages[2]:
     
     ---
     
+    **Need more info**?
+    - [`lifelines` documentation - Estimating univariate survival models using Kaplan-Meier](https://lifelines.readthedocs.io/en/latest/Survival%20analysis%20with%20lifelines.html)
+    - [More background on the Kaplan-Meier method](http://www.sthda.com/english/wiki/survival-analysis-basics#kaplan-meier-survival-estimate)  
+       
     ''')
 
-    hide_code = st.sidebar.checkbox("Hide source code")
+    #hide_code = st.sidebar.checkbox("Hide source code")
 
     # Import data
     df = pd.read_csv("https://github.com/nchelaru/data-prep/raw/master/telco_cleaned_yes_no.csv")
@@ -266,51 +270,50 @@ if page == pages[2]:
     st.markdown('''
     We will first import the Telco customer churn dataset, which has been cleaned up, and re-encode the outcome column 
     "Churn" in binary form (0/1) as required by the `lifelines` package.
+    
+    ```python
+    ## Import data
+    df = pd.read_csv("https://github.com/nchelaru/data-prep/raw/master/telco_cleaned_yes_no.csv")
+
+    ## Re-encode "Churn" as 0/1
+    df['Churn'] = np.where(df['Churn'] == 'Yes', 1, 0)
+    ```
     ''')
 
-    if hide_code == False:
-        st.markdown(
-        '''
-        ```python
-        ## Import data
-        df = pd.read_csv("https://github.com/nchelaru/data-prep/raw/master/telco_cleaned_yes_no.csv")
-
-        ## Re-encode "Churn" as 0/1
-        df['Churn'] = np.where(df['Churn'] == 'Yes', 1, 0)
-        ```
-        ''')
 
     if st.checkbox("Preview data"):
         st.dataframe(df.head(10))
 
         st.header('Plot the Kaplan-Meier survival curve')
 
-        st.markdown('''In reality, the actual survival function of a population cannot be observed. Instead, it is estimated by
+        st.markdown('''
+        In reality, the actual survival function of a population cannot be observed. Instead, it is estimated by
            the **Kaplan-Meier (KM) estimator**, which essentially calculates the proportion of at-risk
             subjects that has not yet "succumbed" (to death, malfunction, etc) out of all at-risk subjects present at
              each time *t*. Being a non-parametric method, the Kaplan-Meier estimator does not make assumptions about
          the distribution of survival times and any specific relationships between covariates and 
-         time to the event of interest.''')
+         time to the event of interest.
+         
+        The `lifelines` API is very similar to that of `scikit-learn`, where the `KaplanMeierFitter` object is 
+        first instantiated and then fitted to the data.
+    
+        ```python
+        ## Instantiate kmf object
+        kmf = KaplanMeierFitter()
 
-        if hide_code == False:
-            st.markdown('''
-            The `lifelines` API is very similar to that of `scikit-learn`, where the `KaplanMeierFitter` object is 
-            first instantiated and then fitted to the data.
-        
-            ```python
-            ## Instantiate kmf object
-            kmf = KaplanMeierFitter()
-    
-            ## Fit kmf object to data
-            kmf.fit(df['Tenure'], event_observed = df['Churn'])
-    
-            ## Plot KM curve
-            ax = kmf.plot(xlim=(0, 75), ylim=(0, 1))
-            ax.set_title("Overall survival probability")
-            ax.set_xlabel("Tenure (months)")
-            ax.set_ylabel("Survival probability")
-            ```
-            ''')
+        ## Fit kmf object to data
+        kmf.fit(df['Tenure'], event_observed = df['Churn'])
+
+        ## Plot KM curve
+        ax = kmf.plot(xlim=(0, 75), ylim=(0, 1))
+        ax.set_title("Overall survival probability")
+        ax.set_xlabel("Tenure (months)")
+        ax.set_ylabel("Survival probability")
+        ```
+         
+         ''')
+
+
 
         if st.checkbox("Plot!"):
             ## Instantiate kmf object
@@ -326,6 +329,8 @@ if page == pages[2]:
             ax.set_ylabel("Survival probability")
 
             st.pyplot()
+
+            plt.close()
 
             st.markdown('''
             The y-axis represents the probability that a
@@ -348,6 +353,10 @@ if page == pages[3]:
     
     ---
     
+    **Need more info?**
+    - [Succinct introduction to Cox proportional hazard model and underlying assumption](https://journals.lww.com/anesthesia-analgesia/Fulltext/2018/09000/Survival_Analysis_and_Interpretation_of.32.aspx#JCL8)
+    - [`lifelines` documentation - Testing the proportional hazard assumptions ](https://lifelines.readthedocs.io/en/latest/Survival%20Regression.html#cox-s-proportional-hazard-model)
+    - [Detailed walkthrough (in R) of the methods and concepts for evaluating assumptions underlying the Cox regression model](http://www.sthda.com/english/wiki/cox-model-assumptions)
     ''')
 
     st.title('The proportional hazard assumption')
@@ -398,9 +407,11 @@ if page == pages[4]:
     
     ---
     
-    ''')
+    **Need more info?**
+    - [Spotting proportional hazard assumption violations from Kaplan-Meier curves](https://www.theanalysisfactor.com/assumptions-cox-regression/)
+   ''')
 
-    hide_code = st.sidebar.checkbox("Hide source code")
+    #hide_code = st.sidebar.checkbox("Hide source code")
 
     st.title('Test the proportional hazard assumption - visual inspection')
 
@@ -425,37 +436,37 @@ if page == pages[4]:
 
     disc_df = pd.read_csv('./disc_churn.csv')
 
-    if hide_code == False:
-        st.markdown(
-            '''
-            ```r
-            ## Import library
-            library(plyr)
-            library(dplyr)
-            library(arulesCBA)
-            
-            ## Import data
-            df <- read.csv("https://github.com/nchelaru/data-prep/raw/master/telco_cleaned_yes_no.csv")
-            
-            ## Encode "Churn" as 0/1
-            df <- df %>%
-                    mutate(Churn = ifelse(Churn == "No",0,1)) %>%
-                    mutate(Churn = as.factor(Churn))
-            
-            ## Discretize "MonthlyCharges" with respect to "Churn"/"No Churn" label and assign to new column in dataframe
-            df$Binned_MonthlyCharges <- discretizeDF.supervised(Churn ~ ., 
-                                                                df[, c('MonthlyCharges', 'Churn')], method='mdlp')$MonthlyCharges
-            
-            ## Rename the levels based on knowledge of min/max monthly charges
-            df$Binned_MonthlyCharges = revalue(df$Binned_MonthlyCharges,
-                                                c("[-Inf,29.4)"="$0-29.4", 
-                                                  "[29.4,56)"="$29.4-56",
-                                                  "[56,68.8)"="$56-68.8",
-                                                  "[68.8,107)"="$68.8-107",
-                                                  "[107, Inf]" = "$107-118.75"))
-            ```
-            
-            ''')
+
+    st.markdown(
+    '''
+    ```r
+    ## Import library
+    library(plyr)
+    library(dplyr)
+    library(arulesCBA)
+    
+    ## Import data
+    df <- read.csv("https://github.com/nchelaru/data-prep/raw/master/telco_cleaned_yes_no.csv")
+    
+    ## Encode "Churn" as 0/1
+    df <- df %>%
+            mutate(Churn = ifelse(Churn == "No",0,1)) %>%
+            mutate(Churn = as.factor(Churn))
+    
+    ## Discretize "MonthlyCharges" with respect to "Churn"/"No Churn" label and assign to new column in dataframe
+    df$Binned_MonthlyCharges <- discretizeDF.supervised(Churn ~ ., 
+                                                        df[, c('MonthlyCharges', 'Churn')], method='mdlp')$MonthlyCharges
+    
+    ## Rename the levels based on knowledge of min/max monthly charges
+    df$Binned_MonthlyCharges = revalue(df$Binned_MonthlyCharges,
+                                        c("[-Inf,29.4)"="$0-29.4", 
+                                          "[29.4,56)"="$29.4-56",
+                                          "[56,68.8)"="$56-68.8",
+                                          "[68.8,107)"="$68.8-107",
+                                          "[107, Inf]" = "$107-118.75"))
+    ```
+    ''')
+
 
     if st.checkbox("Preview discretized data"):
         with st.spinner('Working on it...'):
@@ -484,6 +495,8 @@ if page == pages[4]:
 
             st.pyplot()
 
+            plt.close()
+
             st.markdown('''
             We see that both plots identified two groups of customers that are more likely to churn, 
             one group paying $26-56/month and another paying $68-106/month. As we had mentioned previously, 
@@ -498,50 +511,50 @@ if page == pages[4]:
 
         st.markdown('''
         As mentioned in the previous section, crossing of the curves for a factor is an indication that the 
-        proportional hazard assumption is violated. So let's take a look:
+        proportional hazard assumption is violated. So let's take a look.
+        
+        The code below is adapted from work by [Zach Angell](https://medium.com/@zachary.james.angell/applying-survival-analysis-to-customer-churn-40b5a809b05a).
         ''')
 
-        if hide_code == False:
-            st.markdown(
-                '''
-                ```python
-                ## Set up subplot grid
-                fig, axes = plt.subplots(nrows = 9, ncols = 2,
-                                         sharex = True, sharey = True,
-                                         figsize=(10, 35))
-                                         
-                ## Set colour dictionary for consistent colour coding of KM curves
-                colours = {'Yes':'g', 'No':'r',
-                           'Female':'b', 'Male':'y',
-                           'Month-to-month':'#007f0e', 'Two year':'#c4507c', 'One year':'#feba9e',
-                           'DSL':'#ad53cd', 'Fiber optic':'#33ccff',
-                           'Electronic check':'#33cc33', 'Mailed check':'#ff8000', 'Bank transfer (automatic)':'#9933ff', 'Credit card (automatic)':'#ff66b3',
-                           "$0-29.4":'#ff3333', "$29.4-56":'#55ff00', "$56-68.8":'#1a8cff', "$68.8-107":'#ffff4d', "$107-118.75":'#8f5f7f',
-                           '40-65m':'#d04813', '5-20m':'#97fa83', '20-40m':'#38ccde', '0-5m':'#6d8d97', '65-72m':'#a053b4'}
-        
-                ## Plot KM curve for each categorical variable
-                def categorical_km_curves(feature, t='Tenure', event='Churn', df=df, ax=None):
-                    for cat in sorted(df[feature].unique(), reverse=True):
-                        idx = df[feature] == cat
-                        kmf = KaplanMeierFitter()
-                        kmf.fit(df[idx][t], event_observed=df[idx][event], label=cat)
-                        kmf.plot(ax=ax, label=cat, ci_show=True, c=colours[cat])
-        
-                col_list = df.drop(['Churn', 'Tenure', 'MonthlyCharges', 'TotalCharges'], axis=1).columns
-                
-                for cat, ax in zip(col_list, axes.flatten()):
-                    categorical_km_curves(feature=cat, t='Tenure', event='Churn', df = df, ax=ax)
-                    ax.legend(loc='lower left', prop=dict(size=14))
-                    ax.set_title(cat, fontsize=18)
-                    #p = multivariate_logrank_test(df['Tenure'], df[cat], df['Churn'])
-                    #ax.add_artist(AnchoredText(p.p_value, loc='upper right', frameon=False))
-                    ax.set_xlabel('Tenure')
-                    ax.set_ylabel('Survival probability')
-        
-                fig.subplots_adjust(top=0.97)
-                ```
-                '''
-            )
+        st.markdown(
+            '''
+            ```python
+            ## Set up subplot grid
+            fig, axes = plt.subplots(nrows = 9, ncols = 2,
+                                     sharex = True, sharey = True,
+                                     figsize=(10, 35))
+                                     
+            ## Set colour dictionary for consistent colour coding of KM curves
+            colours = {'Yes':'g', 'No':'r',
+                       'Female':'b', 'Male':'y',
+                       'Month-to-month':'#007f0e', 'Two year':'#c4507c', 'One year':'#feba9e',
+                       'DSL':'#ad53cd', 'Fiber optic':'#33ccff',
+                       'Electronic check':'#33cc33', 'Mailed check':'#ff8000', 'Bank transfer (automatic)':'#9933ff', 'Credit card (automatic)':'#ff66b3',
+                       "$0-29.4":'#ff3333', "$29.4-56":'#55ff00', "$56-68.8":'#1a8cff', "$68.8-107":'#ffff4d', "$107-118.75":'#8f5f7f',
+                       '40-65m':'#d04813', '5-20m':'#97fa83', '20-40m':'#38ccde', '0-5m':'#6d8d97', '65-72m':'#a053b4'}
+    
+            ## Plot KM curve for each categorical variable
+            def categorical_km_curves(feature, t='Tenure', event='Churn', df=df, ax=None):
+                for cat in sorted(df[feature].unique(), reverse=True):
+                    idx = df[feature] == cat
+                    kmf = KaplanMeierFitter()
+                    kmf.fit(df[idx][t], event_observed=df[idx][event], label=cat)
+                    kmf.plot(ax=ax, label=cat, ci_show=True, c=colours[cat])
+    
+            col_list = df.drop(['Churn', 'Tenure', 'MonthlyCharges', 'TotalCharges'], axis=1).columns
+            
+            for cat, ax in zip(col_list, axes.flatten()):
+                categorical_km_curves(feature=cat, t='Tenure', event='Churn', df = df, ax=ax)
+                ax.legend(loc='lower left', prop=dict(size=14))
+                ax.set_title(cat, fontsize=18)
+                #p = multivariate_logrank_test(df['Tenure'], df[cat], df['Churn'])
+                #ax.add_artist(AnchoredText(p.p_value, loc='upper right', frameon=False))
+                ax.set_xlabel('Tenure')
+                ax.set_ylabel('Survival probability')
+    
+            fig.subplots_adjust(top=0.97)
+            ```
+            ''')
 
         if st.checkbox("Plot everything!"):
             with st.spinner('Working on it... This one is bit of a doozy...'):
@@ -571,6 +584,8 @@ if page == pages[4]:
 
                 st.pyplot()
 
+                plt.close()
+
                 st.markdown('''
                 For each variable, the curve(s) that decline faster to 0% survival probability 
                 represent population subsets that are more likely to stop buying the company's services.
@@ -596,9 +611,14 @@ if page == pages[5]:
     
     ---
     
+    **Need more info?**
+    - [`lifelines` documentation - Testing the proportional hazard assumptions ](https://lifelines.readthedocs.io/en/latest/Survival%20Regression.html#cox-s-proportional-hazard-model)
+    - [Detailed walkthrough (in R) of the methods and concepts for evaluating assumptions underlying the Cox regression model](http://www.sthda.com/english/wiki/cox-model-assumptions)
+    
     ''')
 
-    hide_code = st.sidebar.checkbox("Hide source code")
+
+    #hide_code = st.sidebar.checkbox("Hide source code")
 
     # Import data
     df = pd.read_csv("https://github.com/nchelaru/data-prep/raw/master/telco_cleaned_yes_no.csv")
@@ -617,29 +637,27 @@ if page == pages[5]:
     first instantiated and fitted to the data in order to test the proportional hazard assumption.
     ''')
 
-
-    if hide_code==False:
-        st.markdown('''
-        ```Python
-        ## Label encode categorical features
-        cat_col = ['Gender', 'SeniorCitizen', 'Partner', 'Dependents',
-                   'PhoneService', 'MultipleLines', 'InternetService', 'OnlineSecurity',
-                   'OnlineBackup', 'DeviceProtection', 'TechSupport', 'StreamingTV',
-                   'StreamingMovies', 'Contract', 'PaperlessBilling', 'PaymentMethod', 'Churn']
-        
-        le = LabelEncoder()
-        
-        df[cat_col] = df[cat_col].apply(le.fit_transform)
-        
-        ## Instantiate object
-        cph = CoxPHFitter()
-        
-        ## Fit to data
-        cph.fit(df, 'Tenure', 'Churn', show_progress=False)
-        
-        ## Test assumption
-        results = proportional_hazard_test(cph, df, time_transform='all')        
-        ''')
+    st.markdown('''
+    ```Python
+    ## Label encode categorical features
+    cat_col = ['Gender', 'SeniorCitizen', 'Partner', 'Dependents',
+               'PhoneService', 'MultipleLines', 'InternetService', 'OnlineSecurity',
+               'OnlineBackup', 'DeviceProtection', 'TechSupport', 'StreamingTV',
+               'StreamingMovies', 'Contract', 'PaperlessBilling', 'PaymentMethod', 'Churn']
+    
+    le = LabelEncoder()
+    
+    df[cat_col] = df[cat_col].apply(le.fit_transform)
+    
+    ## Instantiate object
+    cph = CoxPHFitter()
+    
+    ## Fit to data
+    cph.fit(df, 'Tenure', 'Churn', show_progress=False)
+    
+    ## Test assumption
+    results = proportional_hazard_test(cph, df, time_transform='all')        
+    ''')
 
     if st.checkbox("Test the proportional hazard assumption"):
         with st.spinner('Working on it...'):
@@ -693,6 +711,8 @@ if page == pages[5]:
 
             st.pyplot()
 
+            plt.close()
+
             st.markdown('''
             Consistent with what we saw previously with the stratified Kaplan-Meier curves, the proportional hazard assumption 
             does not hold true for the variables`StreamingTV`, `StreamingMovies` and `MonthlyCharges`. Statistical testing also
@@ -718,9 +738,12 @@ if page == pages[6]:
     
     ---
     
+    **Need more info?**
+    - [`lifelines` documentation - Survival regression](https://lifelines.readthedocs.io/en/latest/Survival%20Regression.html)
+    - [Evaluating (in R) and interpreting hazard ratios from survival regression](http://www.sthda.com/english/wiki/cox-proportional-hazards-model)
     ''')
 
-    hide_code = st.sidebar.checkbox("Hide source code")
+    #hide_code = st.sidebar.checkbox("Hide source code")
 
     st.title("Survival regression - identify factors modifying survival probability")
 
@@ -779,18 +802,17 @@ if page == pages[6]:
     have time-invariant effects on customer churn:
     ''')
 
-    if hide_code == False:
-        st.markdown('''
-        ```Python
-        cph = CoxPHFitter()
-        
-        col_list.extend(['Churn', 'Tenure'])
-
-        cph.fit(df[col_list], duration_col='Tenure', event_col='Churn')
+    st.markdown('''
+    ```Python
+    cph = CoxPHFitter()
     
-        cph.plot()
-            
-        ''')
+    col_list.extend(['Churn', 'Tenure'])
+
+    cph.fit(df[col_list], duration_col='Tenure', event_col='Churn')
+
+    cph.plot()
+        
+    ''')
 
     if st.checkbox("Fit Cox model:"):
         with st.spinner('Working on it...'):
@@ -808,7 +830,7 @@ if page == pages[6]:
 
             st.pyplot()
 
-            plt.close('all')
+            plt.close()
 
 
         st.markdown('''
@@ -858,7 +880,7 @@ if page == pages[6]:
 
             st.pyplot()
 
-            plt.close('all')
+            plt.close()
 
             st.markdown('''
             First off, we see that these stratified Kaplan-Meier curves confirm what the Cox regression model showed us above.
@@ -913,8 +935,8 @@ if page == pages[6]:
 
                 plt.hlines(y=my_range, xmin=ordered_df['Electronic_cheq'], xmax=ordered_df['Non_cheq'], color='grey', alpha=0.4)
                 plt.scatter(ordered_df['Electronic_cheq'], my_range, color='red', alpha=1, label='Customers using electronic cheque')
-                plt.scatter(ordered_df['Non_cheq'], my_range, color='green', alpha=1, label='Other customers')
-                plt.legend()
+                plt.scatter(ordered_df['Non_cheq'], my_range, color='green', alpha=1, label='Customers using other methods')
+                plt.legend(loc='lower right', prop={'size': 12})
 
                 # Add title and axis names
                 plt.yticks(my_range, ordered_df['Category'])
@@ -922,7 +944,7 @@ if page == pages[6]:
 
                 plt.style.use('default')
 
-                plt.rcParams.update({'figure.figsize':[10, 10], 'font.size':14})
+                plt.rcParams.update({'figure.figsize':[10, 14], 'font.size':16})
 
                 plt.tight_layout()
 
@@ -942,19 +964,34 @@ if page == pages[6]:
 
 
 if page == pages[7]:
+
+    st.sidebar.markdown('''
+    
+    ---
+    
+    For other data science/web development projects that I've cooked up, 
+    head over to my portfolio at http://nancychelaru.rbind.io/portfolio/ .
+    
+    
+    
+    ''')
+
     st.title("Where to go from here?")
 
-    st.header("Learning resources")
-
     st.markdown('''
-        Here are a few resources that I have found very helpful in getting started with the 
+    Congratulations on making your way through this microlearning series! Now you have a starter-kit of key concepts and tools for 
+    performing survival analysis in Python.
     
-        | Title                                                        | Source                    | Description                                                  |
-        | ------------------------------------------------------------ | ------------------------- | ------------------------------------------------------------ |
-        | [Survival Analysis Basics](http://www.sthda.com/english/wiki/survival-analysis-basics) | STHDA                     | Comprehensive introduction to survival and hazard functions, and modeling of survival data in R. |
-        | [Introduction to survival analysis](https://lifelines.readthedocs.io/en/latest/Survival%20Analysis%20intro.html) | `lifelines` documentation | Practical introduction to survival analysis and underlying concepts in Python. |
-        | [What is Survival Analysis?](https://www.cscu.cornell.edu/news/statnews/stnews78.pdf) | Cornell University        | A succinct summary of key concepts of survival analysis.     |
-        | [Survival Analysis and Interpretation of Time-to-Event Data](https://journals.lww.com/anesthesia-analgesia/Fulltext/2018/09000/Survival_Analysis_and_Interpretation_of.32.aspx) | Anesthesia & Analgesia    | A more detailed review of the fundamental concepts and applications of survival analysis. |
+    If you are interested in trying everything out in R, head over to the excellent guide at [STHDA](http://www.sthda.com/english/wiki/survival-analysis) 
+    on performing survival analysis using the fantastic `survival` package. 
+    
+    Finally, we need to approach a data science problem from multiple angles if we want to gain robust and nuanced insights 
+    from the data. Check out what I gleaned from this customer churn dataset using [association rule mining](https://nancy-chelaru-centea.shinyapps.io/association_rule_mining/) and 
+    [factor analysis of mixed data](https://rpubs.com/nchelaru/famd) methods, to see how those findings agree and differ from 
+    those shown here.
+    
+    Hope you have enjoyed your stay!
     ''')
+
 
 
