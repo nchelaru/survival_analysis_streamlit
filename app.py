@@ -547,9 +547,7 @@ if page == pages[4]:
                 categorical_km_curves(feature=cat, t='Tenure', event='Churn', df = df, ax=ax)
                 ax.legend(loc='lower left', prop=dict(size=14))
                 ax.set_title(cat, fontsize=18)
-                #p = multivariate_logrank_test(df['Tenure'], df[cat], df['Churn'])
-                #ax.add_artist(AnchoredText(p.p_value, loc='upper right', frameon=False))
-                ax.set_xlabel('Tenure')
+                ax.set_xlabel('Tenure (months)')
                 ax.set_ylabel('Survival probability')
     
             fig.subplots_adjust(top=0.97)
@@ -575,7 +573,7 @@ if page == pages[4]:
                     ax.set_title(cat, fontsize=18)
                     #p = multivariate_logrank_test(df['Tenure'], df[cat], df['Churn'])
                     #ax.add_artist(AnchoredText(p.p_value, loc='upper right', frameon=False))
-                    ax.set_xlabel('Tenure')
+                    ax.set_xlabel('Tenure (months)')
                     ax.set_ylabel('Survival probability')
 
                 fig.subplots_adjust(top=0.97)
@@ -871,7 +869,7 @@ if page == pages[6]:
                 ax.set_title(cat, fontsize=18)
                 #p = multivariate_logrank_test(df['Tenure'], df[cat], df['Churn'])
                 #ax.add_artist(AnchoredText(p.p_value, loc='upper right', frameon=False))
-                ax.set_xlabel('Tenure')
+                ax.set_xlabel('Tenure (months')
                 ax.set_ylabel('Survival probability')
 
             fig.subplots_adjust(top=0.97)
