@@ -12,7 +12,7 @@ from lifelines.statistics import proportional_hazard_test
 from sklearn.preprocessing import LabelEncoder
 import plotly.express as px
 import plotly.graph_objects as go
-from figures import sunburst_fig
+from figures import *
 
 
 
