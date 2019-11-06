@@ -12,18 +12,19 @@ from lifelines.statistics import proportional_hazard_test
 from sklearn.preprocessing import LabelEncoder
 import plotly.express as px
 import plotly.graph_objects as go
+from figures import *
 
 
 
 # Set outline
-pages = ["1. Introduction",
+pages = ["1. Introduction to survival analysis",
          "2. Explore the dataset",
          "3. Estimate the overall survival function",
          "4. The proportional hazard assumption",
-         "5a. Test the assumption - visual inspection",
-         "5b. Statistical testing of the proportional hazard assumption",
-         "6. Identify factors affecting survival probability",
-         "7. Where to go from here?"]
+         "5. Visual inspection of proportional hazards",
+         "6. Statistical testing of the proportional hazard assumption",
+         "7. Identify factors affecting survival probability",
+         "8. Where to go from here?"]
 
 page = st.sidebar.selectbox('Navigate', options=pages)
 
@@ -70,9 +71,11 @@ if page == pages[0]:
      we will use the [Telco customer churn dataset](https://github.com/IBM/telco-customer-churn-on-icp4d) available from IBM. 
     ''')
 
-    st.title('Introduction to survival analysis')
+    st.image('./study.png', caption='Image credit: Icons 8', use_column_width=True)
 
     st.markdown('''
+        ###
+        
         ## What is it?
         Survival analysis is based on two inversely related functions that model time-to-event data:
         - **Survival function**: the probability that the event of interest does not happen at a given time *t*
@@ -123,11 +126,11 @@ if page == pages[1]:
     
     Select any two (can be the same) variables in the dropdown menus below
     to create a exploratory visualization.
-    
-    
     ''')
 
-    cat_list = sorted(['Gender', 'SeniorCitizen', 'Partner', 'Dependents',
+    df = pd.read_csv("https://github.com/nchelaru/data-prep/raw/master/telco_cleaned_yes_no.csv")
+
+    cat_list = sorted([' ', 'Gender', 'SeniorCitizen', 'Partner', 'Dependents',
                        'PhoneService', 'MultipleLines', 'InternetService', 'OnlineSecurity',
                        'OnlineBackup', 'DeviceProtection', 'TechSupport', 'StreamingTV',
                        'StreamingMovies', 'Contract', 'PaperlessBilling', 'PaymentMethod',
@@ -137,29 +140,83 @@ if page == pages[1]:
 
     var2 = st.sidebar.selectbox("Select variable 2", cat_list)
 
-    # Import data
-    df = pd.read_csv("https://github.com/nchelaru/data-prep/raw/master/telco_cleaned_yes_no.csv")
+    if var1 == ' ' and var2 == ' ':
+        '''
+        Click on any of the categorical variable names to expand the
+         sunburt chart and see distribution of the levels in more detail, where the size of each leaf is proportional 
+         to the number of customers in that level.
+        '''
 
-
-    if var1 != var2 and df[var1].dtype == 'object' and df[var2].dtype == 'object':
         with st.spinner('Working on it...'):
+
+            fig = sunburst_fig()
+
+            st.plotly_chart(fig, width=700, height=700)
+    elif var1 != ' ' and (var2 == ' ' or var2 == var1) and df[var1].dtype == 'object':
+        '''
+        There are 7,043 customers in the dataset. Each symbol represents ~100 customers.
+        '''
+
+        with st.spinner('Working on it...'):
+            data = df[var1].value_counts().to_dict()
+
+            fig = plt.figure(
+                FigureClass=Waffle,
+                rows=5,
+                columns=14,
+                values=data,
+                legend={'loc': 'center', 'bbox_to_anchor': (0.5, 1.2), "fontsize":20, 'ncol':2},
+                icons='user',
+                font_size=38,
+                icon_legend=True,
+                figsize=(12, 8)
+            )
+
+            # plt.tight_layout()
+
+            st.pyplot()
+
+            plt.clf()
+    elif var1 != ' ' and var2 == ' ' and df[var1].dtype != 'object':
+        n_bins = st.slider("Number of bins",
+                           min_value=10, max_value=50, value=10, step=2)
+
+        with st.spinner('Working on it...'):
+            fig = px.histogram(df, x=var1, nbins=n_bins)
+
+            fig.update_layout(plot_bgcolor='rgba(0,0,0,0)',
+                              yaxis=go.layout.YAxis(
+                                  title=go.layout.yaxis.Title(
+                                      text="Count"
+                                  )
+                              )
+                              )
+
+            st.plotly_chart(fig)
+    elif var1 != var2 and df[var1].dtype == 'object' and df[var2].dtype == 'object':
+        with st.spinner('Working on it...'):
+            sns.set(style="ticks", font_scale=2.0, rc={'figure.figsize':(16, 10)})
+
             fig = sns.countplot(x=var1, hue=var2, data=df, palette="Set3")
 
             plt.ylabel('Count')
 
-            sns.set(style="ticks", font_scale=1.8, rc={'figure.figsize':(16, 11)})
+            plt.grid(False)
 
-            plt.tight_layout()
+            #plt.tight_layout()
 
             st.pyplot()
+
+            plt.clf()
     elif df[var1].dtype != 'object' and df[var2].dtype == 'object':
+        n_bins = st.slider("Number of bins",
+                           min_value=10, max_value=50, value=10, step=2)
+
         with st.spinner('Working on it...'):
-            n_bins = st.slider("Number of bins",
-                               min_value=10, max_value=50, value=10, step=2)
+            fig = px.histogram(df, x=var1, color=var2, opacity=0.4, barmode = 'overlay', nbins=n_bins)
 
-            fig = px.histogram(df, x=var1, color=var2, nbins=n_bins)
-
-            fig.update_layout(legend_orientation="h",
+            fig.update_layout(plot_bgcolor='rgba(0,0,0,0)',
+                              legend_orientation="h",
                               legend=dict(x=0, y=1.1),
                               yaxis=go.layout.YAxis(
                                   title=go.layout.yaxis.Title(
@@ -170,56 +227,44 @@ if page == pages[1]:
             st.plotly_chart(fig)
     elif df[var1].dtype == 'object' and df[var2].dtype != 'object':
         with st.spinner('Working on it...'):
+            sns.set(style='ticks', font_scale=2.0, rc={'figure.figsize':(16, 10)})
+
             fig = sns.barplot(x=var1, y=var2, data=df, palette="Set3")
 
-            plt.tight_layout()
+            #plt.tight_layout()
 
             st.pyplot()
-    elif var1==var2 and df[var1].dtype == 'object':
-        with st.spinner('Working on it...'):
-            data = df[var1].value_counts().to_dict()
 
-            fig = plt.figure(
-                FigureClass=Waffle,
-                rows=5,
-                columns=14,
-                values=data,
-                legend={'loc': 'center', 'bbox_to_anchor': (0.5, 1.2), "fontsize":16},
-                icons='user',
-                font_size=38,
-                icon_legend=True,
-                figsize=(12, 8)
-            )
-
-            st.markdown('''
-            There are 7,032 customers in the dataset. Each symbol represents ~10 customers.
-            ''')
-            plt.tight_layout()
-
-            st.pyplot()
-    elif var1==var2 and df[var1].dtype != 'object':
+            plt.clf()
+    elif df[var1].dtype != 'object' and df[var2].dtype != 'object' and var1 == var2:
         n_bins = st.slider("Number of bins",
                            min_value=10, max_value=50, value=10, step=2)
 
         with st.spinner('Working on it...'):
-            fig = px.histogram(df, x=var1, nbins=n_bins)
+            fig = px.histogram(df, x=var1, color=None, nbins=n_bins)
 
-            fig.update_layout(
-                yaxis=go.layout.YAxis(
-                    title=go.layout.yaxis.Title(
-                        text="Count"
-                    )
-                )
-            )
+            fig.update_layout(plot_bgcolor='rgba(0,0,0,0)',
+                              legend_orientation="h",
+                              legend=dict(x=0, y=1.1),
+                              yaxis=go.layout.YAxis(
+                                  title=go.layout.yaxis.Title(
+                                      text="Count"
+                                  )
+                              ))
 
             st.plotly_chart(fig)
-    else:
+    elif var1 != var2 and df[var1].dtype != 'object' and df[var2].dtype != 'object':
         with st.spinner('Working on it...'):
+            sns.set(style='ticks', font_scale=1.1, rc={'figure.figsize':(12, 6)})
+
             sns.jointplot(df[var1], df[var2], kind="hex", color="#4CB391")
 
-            plt.tight_layout()
-
             st.pyplot()
+
+            plt.clf()
+
+    else:
+        pass
 
 
 
@@ -250,8 +295,6 @@ if page == pages[2]:
 
     df['Churn'] = np.where(df['Churn'] == 'Yes', 1, 0)
 
-    st.title('Estimate the overall survival function')
-
     st.markdown('''
     At its core, survival analysis aims to estimate how much time it would take before a particular 
     event happens. Data required for survival analysis is collected over a fixed-length observation period 
@@ -265,7 +308,7 @@ if page == pages[2]:
     ''')
 
 
-    st.header('Import and preprocess data')
+    st.header('3.1 Import and preprocess data')
 
     st.markdown('''
     We will first import the Telco customer churn dataset, which has been cleaned up, and re-encode the outcome column 
@@ -284,7 +327,7 @@ if page == pages[2]:
     if st.checkbox("Preview data"):
         st.dataframe(df.head(10))
 
-        st.header('Plot the Kaplan-Meier survival curve')
+        st.header('3.2 Plot the Kaplan-Meier survival curve')
 
         st.markdown('''
         In reality, the actual survival function of a population cannot be observed. Instead, it is estimated by
@@ -330,7 +373,7 @@ if page == pages[2]:
 
             st.pyplot()
 
-            plt.close()
+            plt.clf()
 
             st.markdown('''
             The y-axis represents the probability that a
@@ -359,7 +402,6 @@ if page == pages[3]:
     - [Detailed walkthrough (in R) of the methods and concepts for evaluating assumptions underlying the Cox regression model](http://www.sthda.com/english/wiki/cox-model-assumptions)
     ''')
 
-    st.title('The proportional hazard assumption')
 
     st.markdown('''
     One of the key insights that survival analysis provides is the effect of 
@@ -413,15 +455,13 @@ if page == pages[4]:
 
     #hide_code = st.sidebar.checkbox("Hide source code")
 
-    st.title('Test the proportional hazard assumption - visual inspection')
-
     st.markdown('''
     One of the ways we can get some preliminary ideas as to which factors violate the proportional
      hazard assumption is by plotting and examining Kaplan-Meier survival curves that are stratified by each variable.
      
     ''')
 
-    st.header('Supervised discretization of continuous variable')
+    st.header('5.1 Supervised discretization of continuous variable')
 
     st.markdown('''
      As Kaplan-Meier estimation of the survival function cannot characterize the probability of event occurrence 
@@ -467,7 +507,6 @@ if page == pages[4]:
     ```
     ''')
 
-
     if st.checkbox("Preview discretized data"):
         with st.spinner('Working on it...'):
 
@@ -481,12 +520,13 @@ if page == pages[4]:
 
             x = pd.crosstab(disc_df['Binned_MonthlyCharges'], disc_df['Churn'])
 
-            fig = x.loc[['$0-29.4', "$29.4-56", "$56-68.8", "$68.8-107", "$107-118.75"]].plot.barh(stacked=True, figsize=(17, 9))
+            fig = x.loc[['$0-29.4', "$29.4-56", "$56-68.8", "$68.8-107", "$107-118.75"]].plot.barh(stacked=True,
+                                                                                                   figsize=(13, 9),
+                                                                                                   fontsize=18)
 
-            fig.set_xlabel("Count")
+            fig.set_xlabel("Count", fontsize=20)
             fig.set_ylabel("Monthly fee")
-
-            plt.rcParams.update({'font.size': 20})
+            plt.legend(fontsize=20)
 
             st.markdown('''
             Since these bins are identified as being most "informative" with respect to the target variable `Churn`, let's see the proportion of 
@@ -495,7 +535,7 @@ if page == pages[4]:
 
             st.pyplot()
 
-            plt.close()
+            plt.clf()
 
             st.markdown('''
             We see that both plots identified two groups of customers that are more likely to churn, 
@@ -507,7 +547,7 @@ if page == pages[4]:
              Getting back on track, now we can plot stratified Kaplan-Meier survival curves for each variable.
             ''')
 
-        st.header("Plot stratified Kaplan-Meier curves")
+        st.header("5.2 Plot stratified Kaplan-Meier curves")
 
         st.markdown('''
         As mentioned in the previous section, crossing of the curves for a factor is an indication that the 
@@ -623,8 +663,6 @@ if page == pages[5]:
 
     df['Churn'] = np.where(df['Churn'] == 'Yes', 1, 0)
 
-    st.title('Statistical testing of the proportional hazard assumption')
-
     st.markdown('''
     A well-established approach to test the proportional hazards assumption is based on **scaled Schoenfeld residuals**, 
     which is independent of time if the assumption holds. Therefore, for any given covariate, a significant 
@@ -700,28 +738,28 @@ if page == pages[5]:
     
             ''')
 
+            with st.spinner('Hang on...'):
+                sns.set(rc={'figure.figsize':(15, 10)})
 
-            sns.set(rc={'figure.figsize':(15, 10)})
+                fig2 = sns.heatmap(x.drop('row_mean', axis=1), annot=True, annot_kws={"size": 20}, cbar=False).tick_params(labelsize=22)
 
-            fig2 = sns.heatmap(x.drop('row_mean', axis=1), annot=True, annot_kws={"size": 20}, cbar=False).tick_params(labelsize=22)
+                plt.tight_layout()
 
-            plt.tight_layout()
+                st.pyplot()
 
-            st.pyplot()
+                plt.clf()
 
-            plt.close()
-
-            st.markdown('''
-            Consistent with what we saw previously with the stratified Kaplan-Meier curves, the proportional hazard assumption 
-            does not hold true for the variables`StreamingTV`, `StreamingMovies` and `MonthlyCharges`. Statistical testing also
-            identified several more factors that fail to satisfy this assumption, such as `Contract`, `InternetService` and `PhoneService`. 
-            
-            To be on the safe side, in the next section, we will carry out survival regression on *only* the variables that satisfy the proportional 
-            hazard assumption for any transformation of the "time" parameter.
-            
-            For the rest, there are several ways to deal with factors that have time-varying effects, including stratification, adding time-varying covariates, etc.
-            This is an advanced topic that will not be covered here. For more information, please see the `lifelines` package [documentation](https://lifelines.readthedocs.io/en/latest/Time%20varying%20survival%20regression.html).
-            ''')
+                st.markdown('''
+                Consistent with what we saw previously with the stratified Kaplan-Meier curves, the proportional hazard assumption 
+                does not hold true for the variables`StreamingTV`, `StreamingMovies` and `MonthlyCharges`. Statistical testing also
+                identified several more factors that fail to satisfy this assumption, such as `Contract`, `InternetService` and `PhoneService`. 
+                
+                To be on the safe side, in the next section, we will carry out survival regression on *only* the variables that satisfy the proportional 
+                hazard assumption for any transformation of the "time" parameter.
+                
+                For the rest, there are several ways to deal with factors that have time-varying effects, including stratification, adding time-varying covariates, etc.
+                This is an advanced topic that will not be covered here. For more information, please see the `lifelines` package [documentation](https://lifelines.readthedocs.io/en/latest/Time%20varying%20survival%20regression.html).
+                ''')
 
 
 
@@ -742,8 +780,6 @@ if page == pages[6]:
     ''')
 
     #hide_code = st.sidebar.checkbox("Hide source code")
-
-    st.title("Survival regression - identify factors modifying survival probability")
 
     # Import data
     df = pd.read_csv("https://github.com/nchelaru/data-prep/raw/master/telco_cleaned_yes_no.csv")
@@ -813,22 +849,24 @@ if page == pages[6]:
     ''')
 
     if st.checkbox("Fit Cox model:"):
-        with st.spinner('Working on it...'):
+        with st.spinner('Construction in progress...'):
             cph = CoxPHFitter()
 
             col_list.extend(['Churn', 'Tenure'])
 
             cph.fit(df[col_list], duration_col='Tenure', event_col='Churn')
 
-            plt.rcParams.update({'figure.figsize':[10, 6], 'font.size': 18})
-
             fig = cph.plot()
+
+            fig.tick_params(axis='both', which='major', labelsize=14)
+
+            plt.xlabel("Log Hazard Ratio", fontsize=18)
 
             plt.tight_layout()
 
-            st.pyplot()
+            st.pyplot(height=400)
 
-            plt.close()
+            plt.clf()
 
 
         st.markdown('''
@@ -853,112 +891,115 @@ if page == pages[6]:
         ''')
 
         if st.checkbox("Plot Kaplan-Meier curves"):
-            df = pd.read_csv("https://github.com/nchelaru/data-prep/raw/master/telco_cleaned_yes_no.csv")
+            with st.spinner("Coming right up..."):
+                df = pd.read_csv("https://github.com/nchelaru/data-prep/raw/master/telco_cleaned_yes_no.csv")
 
-            df['Churn'] = np.where(df['Churn'] == 'Yes', 1, 0)
+                df['Churn'] = np.where(df['Churn'] == 'Yes', 1, 0)
 
-            ## Set up subplot grid
-            fig, axes = plt.subplots(nrows = 4, ncols = 2,
-                                     sharex = True, sharey = True,
-                                     figsize=(10, 15)
-                                     )
+                ## Set up subplot grid
+                fig, axes = plt.subplots(nrows = 4, ncols = 2,
+                                         sharex = True, sharey = True,
+                                         figsize=(10, 15)
+                                         )
 
-            for cat, ax in zip(col_list[:-2], axes.flatten()):
-                categorical_km_curves(feature=cat, t='Tenure', event='Churn', df = df, ax=ax)
-                ax.legend(loc='lower left', prop=dict(size=14))
-                ax.set_title(cat, fontsize=18)
-                #p = multivariate_logrank_test(df['Tenure'], df[cat], df['Churn'])
-                #ax.add_artist(AnchoredText(p.p_value, loc='upper right', frameon=False))
-                ax.set_xlabel('Tenure (months')
-                ax.set_ylabel('Survival probability')
+                for cat, ax in zip(col_list[:-2], axes.flatten()):
+                    categorical_km_curves(feature=cat, t='Tenure', event='Churn', df = df, ax=ax)
+                    ax.legend(loc='lower left', prop=dict(size=14))
+                    ax.set_title(cat, fontsize=18)
+                    #p = multivariate_logrank_test(df['Tenure'], df[cat], df['Churn'])
+                    #ax.add_artist(AnchoredText(p.p_value, loc='upper right', frameon=False))
+                    ax.set_xlabel('Tenure (months')
+                    ax.set_ylabel('Survival probability')
 
-            fig.subplots_adjust(top=0.97)
 
-            fig.tight_layout()
+                fig.subplots_adjust(top=0.97)
 
-            st.pyplot()
-
-            plt.close()
-
-            st.markdown('''
-            First off, we see that these stratified Kaplan-Meier curves confirm what the Cox regression model showed us above.
-            Recall that for each variable, the curve(s) that decline faster to 0% survival probability represent population subsets 
-            that are more likely to stop buying the company's services. We can see that customers (green curves) that 
-                have `Dependents` and purchased `OnlineBackup`, `OnlineSecurity` and `TechSupport` have more slowly declining curves than those 
-                who do not (red curves). The inverse is true for customers who have `PaperlessBilling`. The overlapping curves for male and female 
-                customers indicate that they have similar rates of churn as time goes on.
-            
-            Interestingly, it is customers who pay by `Electronic check` [sic] who are much more likely to churn than 
-            those who pay by `Mailed check` [sic], `Credit card` or `Bank transfer`. Let's look at what makes these customers
-             "special" as compared to those paying by other means:  
-            
-            ''')
-
-            if st.checkbox("Compare customers"):
-                df = pd.read_csv("https://github.com/nchelaru/data-prep/raw/master/telco_cleaned_renamed.csv")
-
-                x = df[df['PaymentMethod'] == 'Electronic check']
-
-                y = df[df['PaymentMethod'] != 'Electronic check']
-
-                def get_values(df, label):
-                    o =[]
-
-                    for i in df.columns:
-                        if df[i].dtype == object:
-                            o.append(df[i].value_counts().to_dict())
-
-                    result = {}
-
-                    for k in o:
-                        result.update((k))
-
-                    j = pd.DataFrame()
-
-                    j['Category'] = [key for key, value in result.items() if not 'No' in key]
-
-                    j[label] = [value/df.shape[0]*100 for key, value in result.items() if not 'No' in key]
-
-                    return j
-
-                elec_res = get_values(x, "Electronic_cheq")
-
-                non_res = get_values(y, "Non_cheq")
-
-                final = pd.merge(elec_res, non_res, on='Category', how='inner')
-
-                # Reorder it following the values of the first value:
-                ordered_df = final.sort_values(by='Electronic_cheq')
-                my_range=range(1,len(final.index)+1)
-
-                plt.hlines(y=my_range, xmin=ordered_df['Electronic_cheq'], xmax=ordered_df['Non_cheq'], color='grey', alpha=0.4)
-                plt.scatter(ordered_df['Electronic_cheq'], my_range, color='red', alpha=1, label='Customers using electronic cheque')
-                plt.scatter(ordered_df['Non_cheq'], my_range, color='green', alpha=1, label='Customers using other methods')
-                plt.legend(loc='lower right', prop={'size': 12})
-
-                # Add title and axis names
-                plt.yticks(my_range, ordered_df['Category'])
-                plt.xlabel('Percentage of customers (%)')
-
-                plt.style.use('default')
-
-                plt.rcParams.update({'figure.figsize':[10, 14], 'font.size':16})
-
-                plt.tight_layout()
+                fig.tight_layout()
 
                 st.pyplot()
 
-                plt.close()
+                plt.clf()
 
                 st.markdown('''
-                Most strikingly, a **higher** percentage of customers who pay by electronic cheque `Month-to-month` contracts, 
-                purchase `Fiber optic` internet service, and have `PaperlessBilling` than that of customers who pay by other methods. These characteristics have been shown in this and [previous 
-                analyses](http://rpubs.com/nchelaru/famd) to be associated with higher likelihood of churn. Interestingly too, a **smaller** proportion of customers
-                paying by electronic cheque have purchased `OnlineSecurity` and have `Dependents` as compared to customers who do so also but pay by other means. 
-                [Previous analyses](http://rpubs.com/nchelaru/famd) have shown that these traits are associated with more "loyal" customers. 
+                First off, we see that these stratified Kaplan-Meier curves confirm what the Cox regression model showed us above.
+                Recall that for each variable, the curve(s) that decline faster to 0% survival probability represent population subsets 
+                that are more likely to stop buying the company's services. We can see that customers (green curves) that 
+                    have `Dependents` and purchased `OnlineBackup`, `OnlineSecurity` and `TechSupport` have more slowly declining curves than those 
+                    who do not (red curves). The inverse is true for customers who have `PaperlessBilling`. The overlapping curves for male and female 
+                    customers indicate that they have similar rates of churn as time goes on.
                 
-                Taken together, all of these findings help us to create portraits of customers who need to be targeted for retention campaigns.
+                Interestingly, it is customers who pay by `Electronic check` [sic] who are much more likely to churn than 
+                those who pay by `Mailed check` [sic], `Credit card` or `Bank transfer`. Let's look at what makes these customers
+                 "special" as compared to those paying by other means:  
+                
                 ''')
+
+                if st.checkbox("Compare customers"):
+                    df = pd.read_csv("https://github.com/nchelaru/data-prep/raw/master/telco_cleaned_renamed.csv")
+
+                    x = df[df['PaymentMethod'] == 'Electronic check']
+
+                    y = df[df['PaymentMethod'] != 'Electronic check']
+
+                    def get_values(df, label):
+                        o =[]
+
+                        for i in df.columns:
+                            if df[i].dtype == object:
+                                o.append(df[i].value_counts().to_dict())
+
+                        result = {}
+
+                        for k in o:
+                            result.update((k))
+
+                        j = pd.DataFrame()
+
+                        j['Category'] = [key for key, value in result.items() if not 'No' in key]
+
+                        j[label] = [value/df.shape[0]*100 for key, value in result.items() if not 'No' in key]
+
+                        return j
+
+                    elec_res = get_values(x, "Electronic_cheq")
+
+                    non_res = get_values(y, "Non_cheq")
+
+                    final = pd.merge(elec_res, non_res, on='Category', how='inner')
+
+                    # Reorder it following the values of the first value:
+                    ordered_df = final.sort_values(by='Electronic_cheq')
+                    my_range=range(1,len(final.index)+1)
+
+                    plt.hlines(y=my_range, xmin=ordered_df['Electronic_cheq'], xmax=ordered_df['Non_cheq'],
+                               color='grey', alpha=0.4)
+                    plt.scatter(ordered_df['Electronic_cheq'], my_range, color='red', alpha=1, label='Customers using electronic cheque')
+                    plt.scatter(ordered_df['Non_cheq'], my_range, color='green', alpha=1, label='Customers using other methods')
+                    plt.legend(loc='lower right', prop={'size': 18})
+
+                    # Add title and axis names
+                    plt.yticks(my_range, ordered_df['Category'])
+                    plt.xlabel('% customers in the group')
+
+                    plt.style.use('default')
+
+                    plt.rcParams.update({'figure.figsize':[10, 6], 'font.size':16})
+
+                    plt.tight_layout()
+
+                    st.pyplot(height=300)
+
+                    plt.clf()
+
+                    st.markdown('''
+                    Most strikingly, a **higher** percentage of customers who pay by electronic cheque `Month-to-month` contracts, 
+                    purchase `Fiber optic` internet service, and have `PaperlessBilling` than that of customers who pay by other methods. These characteristics have been shown in this and [previous 
+                    analyses](http://rpubs.com/nchelaru/famd) to be associated with higher likelihood of churn. Interestingly too, a **smaller** proportion of customers
+                    paying by electronic cheque have purchased `OnlineSecurity` and have `Dependents` as compared to customers who do so also but pay by other means. 
+                    [Previous analyses](http://rpubs.com/nchelaru/famd) have shown that these traits are associated with more "loyal" customers. 
+                    
+                    Taken together, all of these findings help us to create portraits of customers who need to be targeted for retention campaigns.
+                    ''')
 
 
 if page == pages[7]:
@@ -972,13 +1013,20 @@ if page == pages[7]:
     
     ''')
 
-    st.title("Where to go from here?")
-
     st.balloons()
 
-    st.markdown('''
-    Congratulations on making your way through this microlearning series! Now you have a starter-kit of key concepts and tools for 
-    performing survival analysis in Python.
+    '''
+    ### Congratulations on making your way through this microlearning series! 
+    
+    Now you have a starter-kit of key concepts and tools for performing survival analysis in Python.
+    
+    ###
+    '''
+
+    st.image('./survival_tools.png', caption='Image credit: Icons 8', use_column_width=True)
+
+    '''
+    ###
     
     If you are interested in trying everything out in R, head over to the excellent guide at [STHDA](http://www.sthda.com/english/wiki/survival-analysis) 
     on performing survival analysis using the fantastic `survival` package. 
@@ -989,7 +1037,7 @@ if page == pages[7]:
     those shown here.
     
     Hope you have enjoyed your stay! :)
-    ''')
+    '''
 
 
 
