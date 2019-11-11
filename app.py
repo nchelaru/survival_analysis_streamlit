@@ -1035,17 +1035,21 @@ if page == pages[7]:
     
     ---
     
-    For other data science/web development projects that I've cooked up, 
-    head over to my portfolio at http://nancychelaru.rbind.io/portfolio/ .
+    You can find the source code for this app [@nchelaru](https://github.com/nchelaru/survival_analysis_streamlit).
+     
+    Curious to see what else I have cooked up? Head over to my portfolio, 
+    [The Perennial Beginner](http://nancychelaru.rbind.io/portfolio/). 
+    
+    
     
     ''')
 
     st.balloons()
 
     '''
-    ### Congratulations on making your way through this microlearning series! 
+    ## Congratulations for making it to the finish line! 
     
-    Now you have a starter-kit of key concepts and tools for performing survival analysis in Python.
+    ### Now you have a starter-kit of key concepts and tools for performing survival analysis in Python.
     
     ###
     '''
