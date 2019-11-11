@@ -140,6 +140,12 @@ if page == pages[1]:
 
     var2 = st.sidebar.selectbox("Select variable 2", cat_list)
 
+
+
+    plt.rcParams.update({'axes.labelpad': 15, 'axes.labelsize': 18, 'xtick.labelsize':16, 'ytick.labelsize': 14,
+                         'legend.title_fontsize': 20, 'legend.loc':'best', 'legend.fontsize':'large',
+                         'figure.figsize':(10, 8)})
+
     if var1 == ' ' and var2 == ' ':
         '''
         Click on any of the categorical variable names to expand the
@@ -182,7 +188,7 @@ if page == pages[1]:
                            min_value=10, max_value=50, value=10, step=2)
 
         with st.spinner('Working on it...'):
-            fig = px.histogram(df, x=var1, nbins=n_bins)
+            fig = px.histogram(df, x=var1, nbins=n_bins, width=1200)
 
             fig.update_layout(plot_bgcolor='rgba(0,0,0,0)',
                               yaxis=go.layout.YAxis(
@@ -195,15 +201,18 @@ if page == pages[1]:
             st.plotly_chart(fig)
     elif var1 != var2 and df[var1].dtype == 'object' and df[var2].dtype == 'object':
         with st.spinner('Working on it...'):
-            sns.set(style="ticks", font_scale=2.0, rc={'figure.figsize':(16, 10)})
-
             fig = sns.countplot(x=var1, hue=var2, data=df, palette="Set3")
 
             plt.ylabel('Count')
 
+            if var1 == 'PaymentMethod':
+                plt.xticks(rotation=30, ha="right")
+            else:
+                pass
+
             plt.grid(False)
 
-            #plt.tight_layout()
+            plt.tight_layout()
 
             st.pyplot()
 
@@ -213,7 +222,7 @@ if page == pages[1]:
                            min_value=10, max_value=50, value=10, step=2)
 
         with st.spinner('Working on it...'):
-            fig = px.histogram(df, x=var1, color=var2, opacity=0.4, barmode = 'overlay', nbins=n_bins)
+            fig = px.histogram(df, x=var1, color=var2, opacity=0.4, barmode = 'overlay', nbins=n_bins, width=1000)
 
             fig.update_layout(plot_bgcolor='rgba(0,0,0,0)',
                               legend_orientation="h",
@@ -227,11 +236,18 @@ if page == pages[1]:
             st.plotly_chart(fig)
     elif df[var1].dtype == 'object' and df[var2].dtype != 'object':
         with st.spinner('Working on it...'):
-            sns.set(style='ticks', font_scale=2.0, rc={'figure.figsize':(16, 10)})
+            # sns.set(style='ticks', font_scale=2.2,
+            #         rc={'figure.figsize':(18, 16), 'axes.labelpad':30})
 
             fig = sns.barplot(x=var1, y=var2, data=df, palette="Set3")
 
-            #plt.tight_layout()
+            if var1 == 'PaymentMethod':
+                plt.xticks(rotation=20, ha="right")
+            else:
+                pass
+
+
+            plt.tight_layout()
 
             st.pyplot()
 
@@ -241,7 +257,7 @@ if page == pages[1]:
                            min_value=10, max_value=50, value=10, step=2)
 
         with st.spinner('Working on it...'):
-            fig = px.histogram(df, x=var1, color=None, nbins=n_bins)
+            fig = px.histogram(df, x=var1, color=None, nbins=n_bins, width=1000)
 
             fig.update_layout(plot_bgcolor='rgba(0,0,0,0)',
                               legend_orientation="h",
@@ -607,14 +623,19 @@ if page == pages[4]:
 
                 col_list = disc_df.drop(['Churn', 'Tenure', 'MonthlyCharges', 'TotalCharges'], axis=1).columns
 
+                plt.rcParams.update({'axes.labelpad': 10})
+
                 for cat, ax in zip(col_list, axes.flatten()):
                     categorical_km_curves(feature=cat, t='Tenure', event='Churn', df = disc_df, ax=ax)
                     ax.legend(loc='lower left', prop=dict(size=14))
                     ax.set_title(cat, fontsize=18)
                     #p = multivariate_logrank_test(df['Tenure'], df[cat], df['Churn'])
                     #ax.add_artist(AnchoredText(p.p_value, loc='upper right', frameon=False))
-                    ax.set_xlabel('Tenure (months)')
-                    ax.set_ylabel('Survival probability')
+                    ax.set_xlabel('Tenure (months)', fontsize=16)
+                    ax.set_ylabel('Survival probability', fontsize=16)
+                    ax.tick_params(labelsize=12)
+
+                fig.delaxes(axes[8][1])
 
                 fig.subplots_adjust(top=0.97)
 
@@ -622,7 +643,7 @@ if page == pages[4]:
 
                 st.pyplot()
 
-                plt.close()
+                plt.clf()
 
                 st.markdown('''
                 For each variable, the curve(s) that decline faster to 0% survival probability 
@@ -848,7 +869,7 @@ if page == pages[6]:
         
     ''')
 
-    if st.checkbox("Fit Cox model:"):
+    if st.checkbox("Fit Cox model"):
         with st.spinner('Construction in progress...'):
             cph = CoxPHFitter()
 
@@ -856,11 +877,13 @@ if page == pages[6]:
 
             cph.fit(df[col_list], duration_col='Tenure', event_col='Churn')
 
+            plt.style.use('seaborn-ticks')
+
             fig = cph.plot()
 
-            fig.tick_params(axis='both', which='major', labelsize=14)
+            plt.tick_params(axis='both', which='major', labelsize=20)
 
-            plt.xlabel("Log Hazard Ratio", fontsize=18)
+            plt.xlabel("Log Hazard Ratio", fontsize=22)
 
             plt.tight_layout()
 
@@ -908,11 +931,15 @@ if page == pages[6]:
                     ax.set_title(cat, fontsize=18)
                     #p = multivariate_logrank_test(df['Tenure'], df[cat], df['Churn'])
                     #ax.add_artist(AnchoredText(p.p_value, loc='upper right', frameon=False))
-                    ax.set_xlabel('Tenure (months')
-                    ax.set_ylabel('Survival probability')
+                    ax.set_xlabel('Tenure (months)', fontsize=16)
+                    ax.set_ylabel('Survival probability', fontsize=16)
+                    ax.tick_params(direction='out', labelsize=12)
 
+                plt.style.use('seaborn-ticks')
 
                 fig.subplots_adjust(top=0.97)
+
+                fig.delaxes(axes[3][1])
 
                 fig.tight_layout()
 
@@ -975,15 +1002,15 @@ if page == pages[6]:
                                color='grey', alpha=0.4)
                     plt.scatter(ordered_df['Electronic_cheq'], my_range, color='red', alpha=1, label='Customers using electronic cheque')
                     plt.scatter(ordered_df['Non_cheq'], my_range, color='green', alpha=1, label='Customers using other methods')
-                    plt.legend(loc='lower right', prop={'size': 18})
+                    plt.legend(loc='lower right', prop={'size': 16})
 
                     # Add title and axis names
                     plt.yticks(my_range, ordered_df['Category'])
-                    plt.xlabel('% customers in the group')
+                    plt.xlabel('% customers in the group', fontsize=18)
 
                     plt.style.use('default')
 
-                    plt.rcParams.update({'figure.figsize':[10, 6], 'font.size':16})
+                    plt.tick_params(axis='both', which='major', labelsize=14)
 
                     plt.tight_layout()
 
